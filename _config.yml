@@ -211,7 +211,7 @@ search:
 
 ######## Comments ########
 comments:
-  service: # beaudar, utterances, giscus, twikoo, waline, artalk
+  service: twikoo # beaudar, utterances, giscus, twikoo, waline, artalk
   comment_title: 来即是客，坐坐坐坐~
   lazyload: true # true / false
   # beaudar
@@ -258,7 +258,7 @@ comments:
   twikoo:
     js: https://gcore.jsdelivr.net/npm/twikoo@1.6.8/dist/twikoo.all.min.js # 建议锁定版本
     envId: https://xxx # vercel函数
-    
+
   # Waline
   # https://waline.js.org/
   waline:
