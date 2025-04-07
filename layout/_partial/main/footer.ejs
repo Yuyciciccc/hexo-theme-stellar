@@ -1,36 +1,151 @@
 <%
-const content = theme.footer.content?.replace('{author.name}', (config.author || 'Anonymity'))?.replace('{theme.name}', stellar_info('name'))?.replace('{theme.version}', stellar_info('version'))?.replace('{theme.tree}', stellar_info('tree'))
+const content = theme.footer.content?.replace('{author.name}', (config.author || 'Anonymity'))
+  ?.replace('{theme.name}', stellar_info('name'))
+  ?.replace('{theme.version}', stellar_info('version'))
+  ?.replace('{theme.tree}', stellar_info('tree'));
+
 function layoutDiv() {
-  var el = ''
-  el += `<footer class="page-footer${scrollreveal(' ')} footnote">`
-  el += '<hr>'
+  let el = '';
+  el += `<footer class="page-footer${scrollreveal(' ')} footnote">`;
+  el += '<hr>';
   // sitemap
   if (theme.footer.sitemap && Object.keys(theme.footer.sitemap).length > 0) {
-    el += '<div class="sitemap">'
-    for (let group of Object.keys(theme.footer.sitemap)) {
-      let items = theme.footer.sitemap[group]
-      if (items == undefined || items.length == 0) {
-        continue
+    el += '<div class="sitemap">';
+    for (const group of Object.keys(theme.footer.sitemap)) {
+      const items = theme.footer.sitemap[group];
+      if (!items || items.length === 0) {
+        continue;
       }
-      el += '<div class="sitemap-group">'
-      el += '<span class="fs15">' + group + '</span>'
-      items.forEach((item, i) => {
-        el += '<a href="' + url_for(md_link(item)) + '">'
-        el += __(md_text(item))
-        el += '</a>'
+      el += '<div class="sitemap-group">';
+      el += `<span class="fs15">${group}</span>`;
+      items.forEach((item) => {
+        el += `<a href="${url_for(md_link(item))}">${__(md_text(item))}</a>`;
       });
-      el += '</div>'
+      el += '</div>';
     }
-    el += '</div>'
+    el += '</div>';
   }
   // footer
-  el += '<div class="text">'
+  el += '<div class="text">';
   if (content) {
-    el += markdown(content)
+    el += markdown(content);
   }
-  el += '</div></footer>'
-  return el
+  el += '</div></footer>';
+  return el;
 }
 %>
 <%- layoutDiv() %>
 
+<% if (theme.footer.social && Object.keys(theme.footer.social).length > 0) { %>
+  <div class="social-icons">
+    <% 
+      // 遍历 theme.footer.social 对象
+      for (const [key, item] of Object.entries(theme.footer.social)) {
+    %>
+      <a href="<%= item.url %>" class="social-icon">
+        <%- item.icon %>
+      </a>
+    <% } %>
+  </div>
+<% } %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    let currentMode = localStorage.getItem('weatherMode') || 'sun'; // 获取保存的天气模式，默认是 'sun'
+    const weatherIcon = document.getElementById('toggleWeather');
+    const statusMessage = document.createElement('div');
+    statusMessage.style.position = 'fixed';
+    statusMessage.style.top = '20px';
+    statusMessage.style.left = '50%';
+    statusMessage.style.transform = 'translateX(-50%)';
+    statusMessage.style.padding = '10px 20px';
+    statusMessage.style.backgroundColor = '#000';
+    statusMessage.style.color = '#fff';
+    statusMessage.style.borderRadius = '5px';
+    statusMessage.style.display = 'none';
+    statusMessage.style.zIndex = '9999';
+    document.body.appendChild(statusMessage);
+
+    // 如果没有找到天气图标元素则退出
+    if (!weatherIcon) return;
+
+    // 根据 currentMode 设置初始天气图标和特效
+    setWeatherMode(currentMode);
+
+    // 绑定点击事件，切换天气模式
+    weatherIcon.closest('a').addEventListener('click', function(e) {
+      e.preventDefault();
+
+      // 切换天气模式
+      if (currentMode === 'sun') {
+        currentMode = 'snow';
+        localStorage.setItem('weatherMode', 'snow');
+      } else if (currentMode === 'snow') {
+        currentMode = 'rain';
+        localStorage.setItem('weatherMode', 'rain');
+      } else if (currentMode === 'rain') {
+        currentMode = 'sun';
+        localStorage.setItem('weatherMode', 'sun');
+      }
+
+      setWeatherMode(currentMode); // 更新天气模式
+    });
+
+    // 设置天气模式
+    function setWeatherMode(mode) {
+      // 卸载当前所有特效
+      removeScripts();
+
+      if (mode === 'snow') {
+        weatherIcon.src = '/assets/icons/snow.svg';  // 更新图标
+        loadScript('snow');
+        statusMessage.textContent = '❄️ Snow ❄️'; // 显示雪花提示词
+      } else if (mode === 'rain') {
+        weatherIcon.src = '/assets/icons/rain.svg';  // 更新图标
+        loadScript('rain');
+        statusMessage.textContent = '🌧️ Rain 🌧️'; // 显示雨天提示词
+      } else if (mode === 'sun') {
+        weatherIcon.src = '/assets/icons/sun.svg';  // 更新图标
+        statusMessage.textContent = '☀️ Sun ☀️'; // 显示太阳提示词
+      }
+
+      // 显示状态消息
+      statusMessage.style.display = 'block';
+      setTimeout(() => {
+        statusMessage.style.display = 'none';
+      }, 3000); // 提示框消失的延时
+    }
+
+    // 加载特效脚本
+    function loadScript(mode) {
+      if (mode === 'snow' && !window.__snow__) {
+        const script = document.createElement('script');
+        script.src = '/js/snow.js';
+        script.defer = true;
+        document.body.appendChild(script);
+      } else if (mode === 'rain' && !window.__rain__) {
+        const script = document.createElement('script');
+        script.src = '/js/rain.js';
+        script.defer = true;
+        document.body.appendChild(script);
+      }
+    }
+
+    // 清除特效
+    function removeScripts() {
+      if (window.__snow__) {
+        clearInterval(window.__snow__.timer);
+        if (window.__snow__.canvas) {
+          window.__snow__.canvas.remove();
+        }
+        delete window.__snow__;
+      }
+      if (window.__rain__) {
+        clearInterval(window.__rain__.timer);
+        if (window.__rain__.canvas) {
+          window.__rain__.canvas.remove();
+        }
+        delete window.__rain__;
+      }
+    }
+  });
+</script>
