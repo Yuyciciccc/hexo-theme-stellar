@@ -49,103 +49,116 @@ function layoutDiv() {
   </div>
 <% } %>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    let currentMode = localStorage.getItem('weatherMode') || 'sun'; // 获取保存的天气模式，默认是 'sun'
-    const weatherIcon = document.getElementById('toggleWeather');
-    const statusMessage = document.createElement('div');
-    statusMessage.style.position = 'fixed';
-    statusMessage.style.top = '20px';
-    statusMessage.style.left = '50%';
-    statusMessage.style.transform = 'translateX(-50%)';
-    statusMessage.style.padding = '10px 20px';
-    statusMessage.style.backgroundColor = '#000';
-    statusMessage.style.color = '#fff';
-    statusMessage.style.borderRadius = '5px';
-    statusMessage.style.display = 'none';
-    statusMessage.style.zIndex = '9999';
-    document.body.appendChild(statusMessage);
+document.addEventListener('DOMContentLoaded', function() {
+  let currentMode = 'sun'; // 默认天气模式
+  const weatherIcon = document.getElementById('toggleWeather');
+  const statusMessage = document.createElement('div');
+  
+  // 设置状态提示框的样式
+  statusMessage.style.position = 'fixed';
+  statusMessage.style.top = '20px';
+  statusMessage.style.left = '50%';
+  statusMessage.style.transform = 'translateX(-50%)';
+  statusMessage.style.padding = '10px 20px';
+  statusMessage.style.backgroundColor = '#000';
+  statusMessage.style.color = '#fff';
+  statusMessage.style.borderRadius = '5px';
+  statusMessage.style.display = 'none';
+  statusMessage.style.zIndex = '9999';
+  document.body.appendChild(statusMessage);
 
-    // 如果没有找到天气图标元素则退出
-    if (!weatherIcon) return;
+  // 如果页面存在天气图标，初始化
+  if (!weatherIcon) return;
 
-    // 根据 currentMode 设置初始天气图标和特效
-    setWeatherMode(currentMode);
+  // 获取之前保存的天气状态
+  const savedMode = localStorage.getItem('weatherMode');
+  if (savedMode) {
+    currentMode = savedMode;
+    setWeatherMode(savedMode, false); // 不提示，直接恢复状态
+  }
 
-    // 绑定点击事件，切换天气模式
-    weatherIcon.closest('a').addEventListener('click', function(e) {
-      e.preventDefault();
+  // 用户点击天气图标切换天气模式
+  weatherIcon.closest('a').addEventListener('click', function(e) {
+    e.preventDefault();
 
-      // 切换天气模式
-      if (currentMode === 'sun') {
-        currentMode = 'snow';
-        localStorage.setItem('weatherMode', 'snow');
-      } else if (currentMode === 'snow') {
-        currentMode = 'rain';
-        localStorage.setItem('weatherMode', 'rain');
-      } else if (currentMode === 'rain') {
-        currentMode = 'sun';
-        localStorage.setItem('weatherMode', 'sun');
-      }
+    if (currentMode === 'sun') {
+      setWeatherMode('snow', true);
+      currentMode = 'snow';
+    } else if (currentMode === 'snow') {
+      setWeatherMode('rain', true);
+      currentMode = 'rain';
+    } else if (currentMode === 'rain') {
+      setWeatherMode('sun', true);
+      currentMode = 'sun';
+    }
+  });
 
-      setWeatherMode(currentMode); // 更新天气模式
-    });
+  // 设置天气模式
+  function setWeatherMode(mode, showTip = false) {
+    // 卸载当前所有特效
+    removeScripts();
 
-    // 设置天气模式
-    function setWeatherMode(mode) {
-      // 卸载当前所有特效
-      removeScripts();
+    if (mode === 'snow') {
+      weatherIcon.src = '/assets/icons/snow.svg';
+      loadScript('snow');
+      if (showTip) statusMessage.textContent = '❄️ Snow ❄️';
+    } else if (mode === 'rain') {
+      weatherIcon.src = '/assets/icons/rain.svg';
+      loadScript('rain');
+      if (showTip) statusMessage.textContent = '🌧️ Rain 🌧️';
+    } else if (mode === 'sun') {
+      weatherIcon.src = '/assets/icons/sun.svg';
+      if (showTip) statusMessage.textContent = '☀️ Sun ☀️';
+    }
 
-      if (mode === 'snow') {
-        weatherIcon.src = '/assets/icons/snow.svg';  // 更新图标
-        loadScript('snow');
-        statusMessage.textContent = '❄️ Snow ❄️'; // 显示雪花提示词
-      } else if (mode === 'rain') {
-        weatherIcon.src = '/assets/icons/rain.svg';  // 更新图标
-        loadScript('rain');
-        statusMessage.textContent = '🌧️ Rain 🌧️'; // 显示雨天提示词
-      } else if (mode === 'sun') {
-        weatherIcon.src = '/assets/icons/sun.svg';  // 更新图标
-        statusMessage.textContent = '☀️ Sun ☀️'; // 显示太阳提示词
-      }
-
-      // 显示状态消息
+    // 显示提示框
+    if (showTip) {
       statusMessage.style.display = 'block';
       setTimeout(() => {
         statusMessage.style.display = 'none';
       }, 3000); // 提示框消失的延时
     }
 
-    // 加载特效脚本
-    function loadScript(mode) {
-      if (mode === 'snow' && !window.__snow__) {
-        const script = document.createElement('script');
-        script.src = '/js/snow.js';
-        script.defer = true;
-        document.body.appendChild(script);
-      } else if (mode === 'rain' && !window.__rain__) {
-        const script = document.createElement('script');
-        script.src = '/js/rain.js';
-        script.defer = true;
-        document.body.appendChild(script);
-      }
-    }
+    // 保存天气状态
+    localStorage.setItem('weatherMode', mode);
+  }
 
-    // 清除特效
-    function removeScripts() {
-      if (window.__snow__) {
-        clearInterval(window.__snow__.timer);
-        if (window.__snow__.canvas) {
-          window.__snow__.canvas.remove();
-        }
-        delete window.__snow__;
-      }
-      if (window.__rain__) {
-        clearInterval(window.__rain__.timer);
-        if (window.__rain__.canvas) {
-          window.__rain__.canvas.remove();
-        }
-        delete window.__rain__;
-      }
+  // 动态加载特效脚本
+  function loadScript(mode) {
+    if (mode === 'snow' && !window.__snow__) {
+      const script = document.createElement('script');
+      script.src = '/js/snow.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    } else if (mode === 'rain' && !window.__rain__) {
+      const script = document.createElement('script');
+      script.src = '/js/rain.js';
+      script.defer = true;
+      document.body.appendChild(script);
     }
-  });
+  }
+
+  // 卸载当前的天气特效
+  function removeScripts() {
+    // 清除雪花特效
+    if (window.__snow__) {
+      clearInterval(window.__snow__.timer);
+      if (window.__snow__.canvas) {
+        window.__snow__.canvas.remove();
+      }
+      delete window.__snow__;
+    }
+    
+    // 清除雨天特效
+    if (window.__rain__) {
+      clearInterval(window.__rain__.timer); // 停止雨滴生成
+      const rainCanvas = document.querySelector('[data-rain-canvas]');
+      if (rainCanvas) {
+        rainCanvas.remove(); // 移除雨滴容器
+      }
+      delete window.__rain__; // 清除全局变量
+    }
+  }
+});
+
 </script>
